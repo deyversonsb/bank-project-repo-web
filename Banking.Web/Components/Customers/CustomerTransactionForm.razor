@@ -1,0 +1,71 @@
+﻿@using Banking.Web.Services.Transactions
+@using Banking.Web.Shared.Models
+@using System.Globalization
+
+@inject ISnackbar Snackbar
+@inject ITransactionService TransactionService
+
+<EditForm Model="Model" OnValidSubmit="OnValidSubmit">
+ <CustomValidation @ref="customValidation" />
+<DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard Elevation="0">
+                <MudCardContent>
+                    <MudTextField Label="Customer Id"
+                                  @bind-Value="Model.CustomerId" For="@(() => Model.CustomerId)" />
+                    <MudNumericField Format="N2" Culture="@_be" Label="Initial Credit" Class="mt-3"
+                                  @bind-Value="Model.InitialCredit" For="@(() => Model.InitialCredit)" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Apply Credit</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+    private CustomValidation? customValidation;
+
+    [Parameter]
+    public EventCallback<Guid> OnGetCustomerId { get; set; }
+
+    [SupplyParameterFromForm]
+    public CustomerTransaction? Model { get; set; }
+
+    private CultureInfo _be = CultureInfo.GetCultureInfo("fr-BE");
+
+    protected override void OnInitialized()
+        => Model ??= new();
+
+    private async Task OnValidSubmit()
+    {
+        customValidation?.ClearErrors();
+
+        var errors = new Dictionary<string, List<string>>();
+
+        bool customerIdValid = Guid.TryParse(Model.CustomerId, out _);
+
+        if (!customerIdValid)
+        {
+            errors.Add(nameof(Model.CustomerId),
+                new() { "'Customer Id' is not valid." });
+        }
+
+        if (errors.Any())
+        {
+            customValidation?.DisplayErrors(errors);
+        }
+        else
+        {
+            var result = await TransactionService.AddCreditTransactionAsync(new(Guid.Parse(Model.CustomerId), Model.InitialCredit));
+            await OnGetCustomerId.InvokeAsync(Guid.Parse(Model.CustomerId));
+
+            if (Model.InitialCredit > 0)
+            {
+                Snackbar.Add("Credit applied sucessfully.", Severity.Success);
+            }
+        }
+    }
+}

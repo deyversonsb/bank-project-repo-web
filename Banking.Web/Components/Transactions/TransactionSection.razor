@@ -1,0 +1,104 @@
+﻿@using Banking.Web.Services.Transactions
+@using Banking.Web.Shared.Models
+@using System.Globalization
+
+@inject ITransactionService TransactionService
+@inject ISnackbar Snackbar
+
+<MudTabs Outlined="true" Position="Position.Left" Rounded="true" Border="true"
+         ApplyEffectsToContainer="true" Class="mt-8" PanelClass="pa-6">
+    <MudTabPanel Text="User Information">
+        <MudCard Elevation="0">
+        <MudCardContent>
+            <MudForm ReadOnly="true" Spacing="2">
+                <MudTextField  T="Guid?" Label="Customer Id" Value="@Model.CustomerId" />
+                <MudTextField T="string" Label="First Name" Value="@Model.Name" />
+                <MudTextField T="string" Label="Surname" Value="@Model.Surname" />
+                <MudNumericField Format="N2" Culture="@_be" T="decimal?" Label="Balance" Value="@Model.Balance" />
+            </MudForm>
+        </MudCardContent>
+      </MudCard>
+    </MudTabPanel>
+    <MudTabPanel Text="All Transactions">
+        @if(Model?.Transactions is not null && Model.Transactions.Exists(t => t.Id != Guid.Empty))
+        {
+            <MudTable Items="@Model?.Transactions" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                <ColGroup>
+                    <col style="width:300px;" />
+                    <col style="width:100px;" />
+                    <col />
+                    <col style="width:100px;" />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh></MudTh>
+                    <MudTh>Amount</MudTh>
+                    <MudTh>Transaction</MudTh>
+                    <MudTh>Created At</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ShowBtnPress(context.Id))">@((context.ShowDetails == true) ? "Hide" : "Show") Transaction Details</MudButton></MudTd>
+                    <MudTd DataLabel="Amout">@context.Amount</MudTd>
+                    <MudTd DataLabel="Transaction">@context.TransactionName</MudTd>
+                    <MudTd DataLabel="Created At">@context.CreatedAtUtc</MudTd>
+                </RowTemplate>
+                <ChildRowContent>
+                    @if (context.ShowDetails)
+                    {
+                        <MudTr>
+                            <td colspan="4">
+                                <MudCard Elevation="0">
+                                    <MudCardHeader>
+                                        <CardHeaderContent>
+                                            <MudText Typo="Typo.body1">Transaction Details for <strong>@context.TransactionName</strong></MudText>
+                                        </CardHeaderContent>
+                                    </MudCardHeader>
+                                    <MudCardContent Class="pa-0">
+                                        <MudText>@($"{context.Id} - {context.TransactionName} - {context.Amount} - {context.CreatedAtUtc}")</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </td>
+                        </MudTr>
+                    }
+                </ChildRowContent>
+            </MudTable>
+        } 
+        else
+        {
+            <MudText>No Transactions</MudText>
+        }
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    private CustomerTransactionResponse? Model { get; set; }
+
+    private CultureInfo _be = CultureInfo.GetCultureInfo("fr-BE");
+
+    protected override void OnInitialized()
+        => Model ??= new(null, string.Empty, string.Empty, null);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CustomerId != Guid.Empty)
+        {
+            var result = await TransactionService.GetTransactionsByCustomerAsync(CustomerId);
+
+            Model = new(result.CustomerId, result.Name, result.Surname, result.Balance)
+            {
+                Transactions = result.Transactions
+            };
+        }
+
+        await base.OnParametersSetAsync();
+    }
+    private void ShowBtnPress(Guid transactionId)
+    {
+        TransactionResponse transaction = Model.Transactions.First(t => t.Id == transactionId);
+        transaction.ShowDetails = !transaction.ShowDetails;
+    }
+
+}

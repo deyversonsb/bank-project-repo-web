@@ -1,0 +1,51 @@
+﻿@using Banking.Web.Services.Customers
+@using Banking.Web.Shared.Models
+@using System.Globalization
+
+@inject ICustomerService CustomerService
+@inject ISnackbar Snackbar
+
+<EditForm Model="Model" OnValidSubmit="OnValidSubmit">
+    <CustomValidation @ref="CustomValidation" />
+    <DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard Elevation="0">
+                <MudCardContent>
+                    <MudTextField Label="First Name"
+                                  @bind-Value="Model.FirstName" For="@(() => Model.FirstName)" />
+                    <MudTextField Label="Surname"
+                                  @bind-Value="Model.Surname" For="@(() => Model.Surname)" />
+                    <MudNumericField Format="N2" Culture="@_be" Label="Initial Credit" Class="mt-3"
+                                  @bind-Value="Model.InitialCredit" For="@(() => Model.InitialCredit)" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+
+    private CustomValidation? CustomValidation;
+
+    [Parameter]
+    public EventCallback<Guid> OnGetCustomerId { get; set; }
+
+    [SupplyParameterFromForm]
+    private Customer? Model { get; set; }
+
+    private CultureInfo _be = CultureInfo.GetCultureInfo("fr-BE");
+
+    protected override void OnInitialized()
+        => Model ??= new();
+
+    private async Task OnValidSubmit()
+    {
+        var result = await CustomerService.RegisterCustomerAsync(new(Model.FirstName, Model.Surname, Model.InitialCredit));
+        await OnGetCustomerId.InvokeAsync(Guid.Parse(result.Substring(1, 36)));
+        Snackbar.Add("Customer registered sucessfully.", Severity.Success);
+    }
+}

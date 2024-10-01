@@ -1,0 +1,60 @@
+﻿@using Banking.Web.Components.Transactions
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="Customer Transaction">
+        <CustomerTransactionForm OnGetCustomerId="HandleTransactionsByCustomer" />
+    </MudTabPanel>
+    <MudTabPanel Text="Sign in">
+        <CustomerRegister OnGetCustomerId="HandleTransactionsByCustomer" />
+    </MudTabPanel>
+</MudTabs>
+
+<MudSpacer />
+
+@if (!IsHidden)
+{
+    @if (Processing)
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <div class="d-flex align-center justify-center pa-20">
+                    <MudProgressCircular Color="Color.Primary" Style="height:150px;width:150px;" Indeterminate="true" />
+                </div>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <TransactionSection CustomerId="@CustomerId" />
+    }
+}
+
+@code {
+    private Guid CustomerId { get; set; }
+
+    private bool IsHidden = true;
+    private bool Processing = false;
+
+    protected override void OnInitialized()
+    {
+        IsHidden = true;
+        Processing = false;
+    }
+
+    private async Task HandleTransactionsByCustomer(Guid customerId)
+    {
+        IsHidden = false;
+        Processing = true;
+
+
+        CustomerId = Guid.Empty;
+        StateHasChanged();
+        CustomerId = customerId;
+
+        await Task.Delay(5000);
+
+        IsHidden = false;
+        Processing = false;
+    } 
+
+}
