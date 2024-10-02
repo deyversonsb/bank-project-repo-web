@@ -3,7 +3,7 @@
 The Banking Project Web was implemented:
 
 - .NET 8
-- Visual Studio 2022 Version 17.10
+- Visual Studio 2022 Version 17.11
 - C#
 - Blazor
 
